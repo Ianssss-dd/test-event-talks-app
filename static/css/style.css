@@ -878,6 +878,52 @@ body {
     margin-top: 4rem;
 }
 
+/* Card Action Buttons */
+.update-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.action-btn {
+    background: hsla(222, 47%, 14%, 0.6);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: var(--transition-smooth);
+}
+
+.action-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--accent);
+    background: var(--border-glow);
+}
+
+.action-btn svg {
+    transition: transform 0.2s ease;
+}
+
+.action-btn:hover svg {
+    transform: scale(1.1);
+}
+
+.action-btn.success {
+    color: white !important;
+    border-color: var(--color-feature) !important;
+    background-color: var(--color-feature-bg) !important;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.2);
+}
+
 /* Screen Reader Only Utility */
 .sr-only {
     position: absolute;

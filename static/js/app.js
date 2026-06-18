@@ -304,10 +304,40 @@ function renderTimeline(updates) {
                 <div class="update-card-content">
                     ${update.contentHtml}
                 </div>
+                <div class="update-card-actions">
+                    <button class="action-btn copy-btn" title="複製到剪貼簿">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span>複製</span>
+                    </button>
+                    <button class="action-btn csv-btn" title="匯出為 CSV">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>匯出 CSV</span>
+                    </button>
+                </div>
             `;
             
             // Add click event to select update card
             card.addEventListener('click', () => selectUpdateCard(update, card));
+            
+            // Add action button handlers (preventing card selection click propagation)
+            const copyBtn = card.querySelector('.copy-btn');
+            copyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                copyToClipboard(update, copyBtn);
+            });
+            
+            const csvBtn = card.querySelector('.csv-btn');
+            csvBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                exportToCSV(update);
+            });
             
             updatesList.appendChild(card);
         });
@@ -486,4 +516,64 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+// 複製內容到剪貼簿
+function copyToClipboard(update, btnElement) {
+    const plainText = extractPlainText(update.contentHtml);
+    const textToCopy = `BigQuery ${update.type} (${update.entryTitle}):\n${plainText}\n\n閱讀更多: ${update.entryLink}`;
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        // 成功複製的視覺回饋
+        const span = btnElement.querySelector('span');
+        const originalText = span.innerText;
+        span.innerText = '已複製!';
+        btnElement.classList.add('success');
+        
+        setTimeout(() => {
+            span.innerText = originalText;
+            btnElement.classList.remove('success');
+        }, 2000);
+    }).catch(err => {
+        console.error('複製失敗:', err);
+    });
+}
+
+// 匯出更新為 CSV 檔案
+function exportToCSV(update) {
+    const date = update.entryTitle;
+    const type = update.type;
+    const link = update.entryLink;
+    const plainContent = extractPlainText(update.contentHtml);
+    
+    // CSV 格式轉義處理
+    const escapeCSV = (str) => {
+        if (str === null || str === undefined) return '""';
+        const stringVal = str.toString();
+        return '"' + stringVal.replace(/"/g, '""') + '"';
+    };
+    
+    const headers = ['Date', 'Type', 'Link', 'Content'];
+    const row = [date, type, link, plainContent];
+    
+    const csvContent = [
+        headers.join(','),
+        row.map(escapeCSV).join(',')
+    ].join('\n');
+    
+    // 建立 Blob 下載檔案
+    // \ufeff 用於解決 Excel 開啟 CSV 時中文亂碼的問題 (BOM 標記)
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const downloadLink = document.createElement('a');
+    
+    // 生成檔名：bigquery_june_17_2026_feature.csv
+    const safeDate = date.replace(/[^a-zA-Z0-9]+/g, '_').toLowerCase();
+    downloadLink.href = url;
+    downloadLink.setAttribute('download', `bigquery_${safeDate}_${type.toLowerCase()}.csv`);
+    
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(url);
 }
